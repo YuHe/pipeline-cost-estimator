@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Descriptions, Table, Statistic, Button, Space } from 'antd';
+import { Descriptions, Table, Statistic, Space } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import usePipelineStore from '@/store/pipelineStore';
 import type { NodeCost } from '@/types';

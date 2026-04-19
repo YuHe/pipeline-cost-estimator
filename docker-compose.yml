@@ -3,12 +3,12 @@ version: "3.9"
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: pipeline_cost
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    # 不对外暴露数据库端口，仅 Docker 内网可访问
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,13 +19,13 @@ services:
 
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
+    # 不对外暴露，由 frontend nginx 反代 /api/ 访问
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/pipeline_cost
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-prod}
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/pipeline_cost
+      SECRET_KEY: ${SECRET_KEY:-please-change-this-secret-key}
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@baidu.com}
-      CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","http://localhost:80"]'
+      CORS_ORIGINS: '["https://cost.iwill.cc","http://cost.iwill.cc","http://localhost:3080"]'
     depends_on:
       db:
         condition: service_healthy
@@ -34,8 +34,9 @@ services:
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3080:80"
     depends_on:
       - backend
 

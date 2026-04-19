@@ -1,6 +1,10 @@
 import { create } from 'zustand';
-import { Node, Edge, addEdge, Connection, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from '@xyflow/react';
-import type { ModuleConfig, GlobalInput, CostResult, PipelineConfig } from '@/types';
+import { addEdge, Connection, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from '@xyflow/react';
+import type { Node, Edge } from '@xyflow/react';
+import type { ModuleConfig, ModuleNodeData, SplitEdgeData, GlobalInput, CostResult, PipelineConfig } from '@/types';
+
+type AppNode = Node<ModuleNodeData>;
+type AppEdge = Edge<SplitEdgeData>;
 
 const DEFAULT_MODULE_CONFIG: ModuleConfig = {
   module_name: '新模块',
@@ -23,8 +27,8 @@ interface PipelineEditorState {
   pipelineName: string;
 
   // React Flow state
-  nodes: Node[];
-  edges: Edge[];
+  nodes: AppNode[];
+  edges: AppEdge[];
 
   // Global input
   globalInput: GlobalInput;
@@ -97,7 +101,7 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
   addNode: (position, config) => {
     const id = `node_${++nodeIdCounter}_${Date.now()}`;
     const moduleConfig = { ...DEFAULT_MODULE_CONFIG, ...config };
-    const newNode: Node = {
+    const newNode: AppNode = {
       id,
       type: 'moduleNode',
       position,
@@ -144,37 +148,37 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
       nodes: state.nodes.map((n) => ({
         id: n.id,
         type: n.type || 'moduleNode',
-        label: n.data.module_name || n.data.label || '模块',
+        label: String(n.data.module_name || n.data.label || '模块'),
         position: n.position,
         data: {
-          module_name: n.data.module_name || n.data.label || '模块',
-          resource_spec_id: n.data.resource_spec_id,
-          resource_spec_name: n.data.resource_spec_name,
-          qps_per_instance: n.data.qps_per_instance ?? 50,
-          avg_response_time_ms: n.data.avg_response_time_ms ?? 100,
-          cost_per_unit: n.data.cost_per_unit ?? 25,
-          cost_type: n.data.cost_type ?? 'per_gpu',
-          gpus_per_machine: n.data.gpus_per_machine ?? 1,
+          module_name: String(n.data.module_name || n.data.label || '模块'),
+          resource_spec_id: n.data.resource_spec_id as number | undefined,
+          resource_spec_name: n.data.resource_spec_name as string | undefined,
+          qps_per_instance: Number(n.data.qps_per_instance ?? 50),
+          avg_response_time_ms: Number(n.data.avg_response_time_ms ?? 100),
+          cost_per_unit: Number(n.data.cost_per_unit ?? 25),
+          cost_type: (n.data.cost_type ?? 'per_gpu') as 'per_gpu' | 'per_machine',
+          gpus_per_machine: Number(n.data.gpus_per_machine ?? 1),
         },
       })),
       edges: state.edges.map((e) => ({
         id: e.id,
         source: e.source,
         target: e.target,
-        split_ratio: e.data?.split_ratio ?? 1.0,
+        split_ratio: Number(e.data?.split_ratio ?? 1.0),
       })),
       global_input: state.globalInput,
     };
   },
 
   loadConfig: (config) => {
-    const nodes: Node[] = config.nodes.map((n) => ({
+    const nodes: AppNode[] = config.nodes.map((n) => ({
       id: n.id,
       type: 'moduleNode',
       position: n.position,
-      data: { ...n.data, label: n.data.module_name || n.label },
+      data: { ...n.data, label: n.data.module_name || n.label } as ModuleNodeData,
     }));
-    const edges: Edge[] = config.edges.map((e) => ({
+    const edges: AppEdge[] = config.edges.map((e) => ({
       id: e.id,
       source: e.source,
       target: e.target,

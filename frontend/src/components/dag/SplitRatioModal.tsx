@@ -21,12 +21,12 @@ function SplitRatioModal({ edgeId, open, onClose }: SplitRatioModalProps) {
 
   useEffect(() => {
     if (edge) {
-      setRatio(Math.round((edge.data?.split_ratio ?? 1.0) * 100));
+      setRatio(Math.round(Number(edge.data?.split_ratio ?? 1.0) * 100));
     }
   }, [edge]);
 
-  const sourceName = sourceNode?.data?.module_name || sourceNode?.data?.label || '源模块';
-  const targetName = targetNode?.data?.module_name || targetNode?.data?.label || '目标模块';
+  const sourceName = String(sourceNode?.data?.module_name || sourceNode?.data?.label || '源模块');
+  const targetName = String(targetNode?.data?.module_name || targetNode?.data?.label || '目标模块');
 
   const handleOk = () => {
     if (edgeId) {

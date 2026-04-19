@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Drawer, Input, InputNumber, Radio, Select, Button, Divider, Space, message } from 'antd';
+import { Drawer, Input, InputNumber, Radio, Select, Button, Divider, message } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import usePipelineStore from '@/store/pipelineStore';
 import { listResourceSpecs } from '@/services/resourceSpecs';
-import type { ResourceSpec } from '@/types';
+import type { ResourceSpec, ModuleNodeData } from '@/types';
 
 function ModuleConfigDrawer() {
   const selectedNodeId = usePipelineStore((s) => s.selectedNodeId);
@@ -13,10 +13,9 @@ function ModuleConfigDrawer() {
   const setSelectedNodeId = usePipelineStore((s) => s.setSelectedNodeId);
 
   const [resourceSpecs, setResourceSpecs] = useState<ResourceSpec[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
-  const nodeData = selectedNode?.data;
+  const nodeData = selectedNode?.data as ModuleNodeData | undefined;
   const open = !!selectedNodeId && !!selectedNode;
 
   useEffect(() => {
@@ -30,7 +29,6 @@ function ModuleConfigDrawer() {
   }, [open]);
 
   const handleSearch = async (query: string) => {
-    setSearchQuery(query);
     try {
       const specs = await listResourceSpecs(query);
       setResourceSpecs(specs);
@@ -46,8 +44,8 @@ function ModuleConfigDrawer() {
     updateNodeConfig(selectedNodeId, {
       resource_spec_id: spec.id,
       resource_spec_name: spec.name,
-      qps_per_instance: spec.qps_per_instance ?? nodeData?.qps_per_instance ?? 50,
-      avg_response_time_ms: spec.avg_response_time_ms ?? nodeData?.avg_response_time_ms ?? 100,
+      qps_per_instance: spec.qps_per_instance ?? (nodeData?.qps_per_instance as number) ?? 50,
+      avg_response_time_ms: spec.avg_response_time_ms ?? (nodeData?.avg_response_time_ms as number) ?? 100,
       cost_per_unit: spec.cost_per_unit,
       cost_type: spec.cost_type,
       gpus_per_machine: spec.gpus_per_machine ?? 1,
@@ -80,7 +78,7 @@ function ModuleConfigDrawer() {
         <div>
           <div style={{ marginBottom: 4, fontSize: 13, color: '#595959' }}>模块名称</div>
           <Input
-            value={nodeData.module_name || nodeData.label || ''}
+            value={String(nodeData.module_name || nodeData.label || '')}
             onChange={(e) => update('module_name', e.target.value)}
           />
         </div>
@@ -90,7 +88,7 @@ function ModuleConfigDrawer() {
           <Select
             style={{ width: '100%' }}
             placeholder="选择资源规格"
-            value={nodeData.resource_spec_id || undefined}
+            value={nodeData.resource_spec_id as number | undefined}
             onChange={handleResourceSelect}
             showSearch
             filterOption={false}
@@ -117,8 +115,8 @@ function ModuleConfigDrawer() {
             style={{ width: '100%' }}
             min={0.01}
             step={1}
-            value={nodeData.qps_per_instance}
-            onChange={(v) => update('qps_per_instance', v ?? 1)}
+            value={nodeData.qps_per_instance as number}
+            onChange={(v: number | null) => update('qps_per_instance', v ?? 1)}
           />
         </div>
 
@@ -128,8 +126,8 @@ function ModuleConfigDrawer() {
             style={{ width: '100%' }}
             min={1}
             step={10}
-            value={nodeData.avg_response_time_ms}
-            onChange={(v) => update('avg_response_time_ms', v ?? 100)}
+            value={nodeData.avg_response_time_ms as number}
+            onChange={(v: number | null) => update('avg_response_time_ms', v ?? 100)}
           />
         </div>
 
@@ -140,15 +138,15 @@ function ModuleConfigDrawer() {
             min={0}
             step={1}
             precision={2}
-            value={nodeData.cost_per_unit}
-            onChange={(v) => update('cost_per_unit', v ?? 0)}
+            value={nodeData.cost_per_unit as number}
+            onChange={(v: number | null) => update('cost_per_unit', v ?? 0)}
           />
         </div>
 
         <div>
           <div style={{ marginBottom: 4, fontSize: 13, color: '#595959' }}>计费方式</div>
           <Radio.Group
-            value={nodeData.cost_type || 'per_gpu'}
+            value={(nodeData.cost_type as string) || 'per_gpu'}
             onChange={(e) => update('cost_type', e.target.value)}
           >
             <Radio value="per_gpu">按卡计费</Radio>
@@ -163,8 +161,8 @@ function ModuleConfigDrawer() {
               style={{ width: '100%' }}
               min={1}
               step={1}
-              value={nodeData.gpus_per_machine ?? 1}
-              onChange={(v) => update('gpus_per_machine', v ?? 1)}
+              value={(nodeData.gpus_per_machine as number) ?? 1}
+              onChange={(v: number | null) => update('gpus_per_machine', v ?? 1)}
             />
           </div>
         )}

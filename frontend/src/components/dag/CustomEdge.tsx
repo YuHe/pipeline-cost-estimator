@@ -21,7 +21,7 @@ function CustomEdge({
     targetPosition,
   });
 
-  const splitRatio = data?.split_ratio ?? 1.0;
+  const splitRatio = Number(data?.split_ratio ?? 1.0);
   const percentage = Math.round(splitRatio * 100);
 
   const labelStyle: React.CSSProperties = {

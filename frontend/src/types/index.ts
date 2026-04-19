@@ -119,6 +119,17 @@ export interface ResourceSpec {
   created_at: string;
 }
 
+// Typed React Flow node/edge data
+export interface ModuleNodeData extends ModuleConfig {
+  label: string;
+  [key: string]: unknown;
+}
+
+export interface SplitEdgeData {
+  split_ratio: number;
+  [key: string]: unknown;
+}
+
 export interface CalculateRequest {
   nodes: {
     node_id: string;

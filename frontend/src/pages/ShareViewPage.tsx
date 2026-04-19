@@ -65,14 +65,14 @@ const ReadonlyModuleNode = memo(({ data }: NodeProps) => {
         position={Position.Top}
         style={{ background: '#1677ff', width: 8, height: 8 }}
       />
-      <div style={titleStyle}>{data.module_name || data.label || '模块'}</div>
+      <div style={titleStyle}>{String(data.module_name || data.label || '模块')}</div>
       <div style={statRowStyle}>
         <span>QPS/实例</span>
-        <span style={{ color: '#262626' }}>{data.qps_per_instance ?? '-'}</span>
+        <span style={{ color: '#262626' }}>{String(data.qps_per_instance ?? '-')}</span>
       </div>
       <div style={statRowStyle}>
         <span>单价</span>
-        <span style={{ color: '#262626' }}>{data.cost_per_unit ?? '-'}</span>
+        <span style={{ color: '#262626' }}>{String(data.cost_per_unit ?? '-')}</span>
       </div>
       <div style={statRowStyle}>
         <span>计费方式</span>

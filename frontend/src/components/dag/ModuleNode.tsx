@@ -1,8 +1,9 @@
 import { memo } from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import usePipelineStore from '@/store/pipelineStore';
+import type { ModuleNodeData } from '@/types';
 
-const ModuleNode = memo(({ id, data, selected }: NodeProps) => {
+const ModuleNode = memo(({ id, data, selected }: NodeProps<Node<ModuleNodeData>>) => {
   const costResult = usePipelineStore((s) => s.costResult);
   const setSelectedNodeId = usePipelineStore((s) => s.setSelectedNodeId);
 
@@ -60,14 +61,14 @@ const ModuleNode = memo(({ id, data, selected }: NodeProps) => {
         position={Position.Top}
         style={{ background: '#1677ff', width: 8, height: 8 }}
       />
-      <div style={titleStyle}>{data.module_name || data.label || '模块'}</div>
+      <div style={titleStyle}>{String(data.module_name || data.label || '模块')}</div>
       <div style={statRowStyle}>
         <span>QPS/实例</span>
-        <span style={{ color: '#262626' }}>{data.qps_per_instance ?? '-'}</span>
+        <span style={{ color: '#262626' }}>{String(data.qps_per_instance ?? '-')}</span>
       </div>
       <div style={statRowStyle}>
         <span>单价</span>
-        <span style={{ color: '#262626' }}>{data.cost_per_unit ?? '-'}</span>
+        <span style={{ color: '#262626' }}>{String(data.cost_per_unit ?? '-')}</span>
       </div>
       <div style={statRowStyle}>
         <span>计费方式</span>
