@@ -2,8 +2,6 @@ import { useEffect, useState, type DragEvent } from 'react';
 import { Spin, Popconfirm, Input, message } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import useTemplateStore from '@/store/templateStore';
-import type { ModuleTemplate } from '@/services/templates';
-
 const DEFAULT_BLANK_CONFIG = {
   module_name: '新模块',
   qps_per_instance: 50,
