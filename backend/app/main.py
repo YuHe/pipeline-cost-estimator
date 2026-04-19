@@ -16,7 +16,7 @@ from app.api.resource_specs import router as resource_specs_router
 from app.api.shares import router as shares_router
 from app.api.versions import router as versions_router
 from app.core.config import settings
-from app.core.database import Base, engine, async_session
+from app.core.database import engine, async_session
 from app.core.security import hash_password
 from app.models.user import User
 from app.models.pipeline import ResourceSpec
@@ -61,7 +61,7 @@ async def seed_resource_specs() -> None:
                 gpu_type="A100-80G",
                 gpu_count=1,
                 cost_per_unit=25.0,
-                cost_type="per_gpu",
+                gpus_per_instance=1,
                 gpus_per_machine=None,
                 qps_per_instance=50.0,
                 avg_response_time_ms=100.0,
@@ -73,7 +73,7 @@ async def seed_resource_specs() -> None:
                 gpu_type="A100-80G",
                 gpu_count=8,
                 cost_per_unit=180.0,
-                cost_type="per_machine",
+                gpus_per_instance=8,
                 gpus_per_machine=8,
                 qps_per_instance=50.0,
                 avg_response_time_ms=100.0,
@@ -85,7 +85,7 @@ async def seed_resource_specs() -> None:
                 gpu_type="V100-32G",
                 gpu_count=1,
                 cost_per_unit=12.0,
-                cost_type="per_gpu",
+                gpus_per_instance=1,
                 gpus_per_machine=None,
                 qps_per_instance=30.0,
                 avg_response_time_ms=150.0,
@@ -97,7 +97,7 @@ async def seed_resource_specs() -> None:
                 gpu_type="T4-16G",
                 gpu_count=1,
                 cost_per_unit=5.0,
-                cost_type="per_gpu",
+                gpus_per_instance=1,
                 gpus_per_machine=None,
                 qps_per_instance=20.0,
                 avg_response_time_ms=200.0,
@@ -179,9 +179,33 @@ async def seed_module_templates() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create tables and seed data
+    # Startup: run Alembic migrations, then seed data
+    from alembic.config import Config
+    from alembic import command
+    from alembic.migration import MigrationContext
+    from alembic.runtime.environment import EnvironmentContext
+    from alembic.script import ScriptDirectory
+
+    alembic_cfg = Config("alembic.ini")
+    script = ScriptDirectory.from_config(alembic_cfg)
+
+    def run_upgrade(connection):
+        context = MigrationContext.configure(connection)
+        with EnvironmentContext(
+            alembic_cfg,
+            script,
+            fn=lambda rev, _: script._upgrade_revs("head", rev),
+            as_sql=False,
+            destination_rev="head",
+        ) as env_ctx:
+            env_ctx.configure(connection=connection, target_metadata=None)
+            with env_ctx.begin_transaction():
+                env_ctx.run_migrations()
+
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(run_upgrade)
+    logger.info("Alembic migrations applied successfully")
+
     await create_super_admin()
     await seed_resource_specs()
     await seed_module_templates()
