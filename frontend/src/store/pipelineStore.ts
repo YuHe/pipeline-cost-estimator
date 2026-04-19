@@ -87,11 +87,11 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
   selectedNodeId: null,
 
   onNodesChange: (changes) => set((state) => ({
-    nodes: applyNodeChanges(changes, state.nodes),
+    nodes: applyNodeChanges(changes, state.nodes) as AppNode[],
   })),
 
   onEdgesChange: (changes) => set((state) => ({
-    edges: applyEdgeChanges(changes, state.edges),
+    edges: applyEdgeChanges(changes, state.edges) as AppEdge[],
   })),
 
   onConnect: (connection) => set((state) => ({

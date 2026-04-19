@@ -126,7 +126,7 @@ export interface ModuleNodeData extends ModuleConfig {
 }
 
 export interface SplitEdgeData {
-  split_ratio: number;
+  split_ratio?: number;
   [key: string]: unknown;
 }
 
