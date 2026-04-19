@@ -11,7 +11,7 @@ Tests cover:
 7. E2E coefficient application
 8. HA mode: 2_gpu
 9. HA mode: 2_machine
-10. Per-GPU vs Per-Machine cost types
+10. Multi-GPU per instance (gpus_per_instance)
 11. Edge cases: cycle detection, duplicate nodes, invalid edges
 12. Split ratio normalization
 """
@@ -39,7 +39,7 @@ def make_node(
     module_name: str = "模块",
     qps_per_instance: float = 50.0,
     cost_per_unit: float = 25.0,
-    cost_type: str = "per_gpu",
+    gpus_per_instance: int = 1,
     gpus_per_machine: int = 1,
     avg_response_time_ms: float = 100.0,
     resource_spec_name: str = "",
@@ -49,7 +49,7 @@ def make_node(
         module_name=module_name,
         qps_per_instance=qps_per_instance,
         cost_per_unit=cost_per_unit,
-        cost_type=cost_type,
+        gpus_per_instance=gpus_per_instance,
         gpus_per_machine=gpus_per_machine,
         avg_response_time_ms=avg_response_time_ms,
         resource_spec_name=resource_spec_name,
@@ -106,6 +106,7 @@ class TestSingleNode:
         assert node_a.raw_instances == 2  # ceil(100/50)
         assert node_a.final_instances == 2
         assert node_a.node_cost == 50.0  # 2 × 25
+        assert node_a.total_gpus == 2  # 2 × 1 (default gpus_per_instance)
         assert resp.total_gpu_cost == 50.0
         assert resp.e2e_total_cost == 50.0
         assert resp.unit_cost == 0.5  # 50/100
@@ -402,8 +403,8 @@ class TestHA2Machine:
                 make_node(
                     "A",
                     qps_per_instance=200,
-                    cost_per_unit=180,
-                    cost_type="per_machine",
+                    cost_per_unit=25,
+                    gpus_per_instance=1,
                     gpus_per_machine=8,
                 )
             ],
@@ -417,8 +418,8 @@ class TestHA2Machine:
         assert a.raw_instances == 1
         assert a.ha_instances == 16  # max(1, 2×8)
         assert a.final_instances == 16
-        # machines = ceil(16/8) = 2
-        assert a.node_cost == 360.0  # 2 × 180
+        assert a.total_gpus == 16  # 16 × 1
+        assert a.node_cost == 400.0  # 16 × 25
 
     def test_ha_2_machine_already_exceeds(self):
         """20 instances, 4 GPUs/machine → min 2×4=8, stays at 20"""
@@ -427,8 +428,8 @@ class TestHA2Machine:
                 make_node(
                     "A",
                     qps_per_instance=5,
-                    cost_per_unit=100,
-                    cost_type="per_machine",
+                    cost_per_unit=10,
+                    gpus_per_instance=1,
                     gpus_per_machine=4,
                 )
             ],
@@ -441,27 +442,21 @@ class TestHA2Machine:
         a = resp.nodes[0]
         assert a.raw_instances == 20
         assert a.ha_instances == 20  # max(20, 8) = 20
-        # machines = ceil(20/4) = 5
-        assert a.node_cost == 500.0  # 5 × 100
+        assert a.total_gpus == 20  # 20 × 1
+        assert a.node_cost == 200.0  # 20 × 10
 
 
 # ===========================================================================
-# Test 10: Per-machine cost type
+# Test 10: Multi-GPU per instance (gpus_per_instance)
 # ===========================================================================
 
 
-class TestPerMachineCost:
-    def test_per_machine_rounding(self):
-        """3 instances, 8 GPUs/machine → ceil(3/8) = 1 machine"""
+class TestMultiGpuPerInstance:
+    def test_single_gpu_per_instance(self):
+        """Default: 1 GPU/instance, 3 instances → 3 GPUs, cost = 3 × 25"""
         req = make_request(
             nodes=[
-                make_node(
-                    "A",
-                    qps_per_instance=40,
-                    cost_per_unit=180,
-                    cost_type="per_machine",
-                    gpus_per_machine=8,
-                )
+                make_node("A", qps_per_instance=40, cost_per_unit=25, gpus_per_instance=1)
             ],
             edges=[],
             value=100,
@@ -469,28 +464,42 @@ class TestPerMachineCost:
         resp = calculate_pipeline_cost(req)
         a = resp.nodes[0]
         assert a.raw_instances == 3  # ceil(100/40)
-        assert a.node_cost == 180.0  # ceil(3/8)=1 machine × 180
+        assert a.total_gpus == 3  # 3 × 1
+        assert a.node_cost == 75.0  # 3 × 25
 
-    def test_per_machine_multiple(self):
-        """10 instances, 4 GPUs/machine → ceil(10/4) = 3 machines"""
+    def test_multi_gpu_per_instance(self):
+        """8 GPUs/instance, 3 instances → 24 GPUs, cost = 24 × 25"""
         req = make_request(
             nodes=[
-                make_node(
-                    "A",
-                    qps_per_instance=10,
-                    cost_per_unit=100,
-                    cost_type="per_machine",
-                    gpus_per_machine=4,
-                )
+                make_node("A", qps_per_instance=40, cost_per_unit=25, gpus_per_instance=8)
             ],
             edges=[],
             value=100,
         )
         resp = calculate_pipeline_cost(req)
         a = resp.nodes[0]
-        assert a.raw_instances == 10
-        # ceil(10/4) = 3 machines
-        assert a.node_cost == 300.0
+        assert a.raw_instances == 3  # ceil(100/40)
+        assert a.total_gpus == 24  # 3 × 8
+        assert a.node_cost == 600.0  # 24 × 25
+
+    def test_multi_gpu_with_ha(self):
+        """1 instance × 4 GPUs, HA 2_gpu → 2 instances × 4 = 8 GPUs"""
+        req = make_request(
+            nodes=[
+                make_node("A", qps_per_instance=200, cost_per_unit=50, gpus_per_instance=4)
+            ],
+            edges=[],
+            value=100,
+            ha_enabled=True,
+            ha_mode="2_gpu",
+        )
+        resp = calculate_pipeline_cost(req)
+        a = resp.nodes[0]
+        assert a.raw_instances == 1
+        assert a.ha_instances == 2
+        assert a.final_instances == 2
+        assert a.total_gpus == 8  # 2 × 4
+        assert a.node_cost == 400.0  # 8 × 50
 
 
 # ===========================================================================

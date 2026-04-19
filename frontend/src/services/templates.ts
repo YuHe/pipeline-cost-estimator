@@ -24,3 +24,11 @@ export async function createTemplate(data: { name: string; description?: string;
 export async function deleteTemplate(id: number): Promise<void> {
   await api.delete(`/module-templates/${id}`);
 }
+
+export async function updateTemplate(
+  id: number,
+  data: { name?: string; description?: string; config?: Record<string, unknown> }
+): Promise<ModuleTemplate> {
+  const res = await api.put<ModuleTemplate>(`/module-templates/${id}`, data);
+  return res.data;
+}

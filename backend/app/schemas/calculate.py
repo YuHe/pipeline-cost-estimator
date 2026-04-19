@@ -15,7 +15,7 @@ class NodeConfig(BaseModel):
     qps_per_instance: float
     avg_response_time_ms: float = 100.0
     cost_per_unit: float
-    cost_type: Literal["per_gpu", "per_machine"]
+    gpus_per_instance: int = 1
     gpus_per_machine: int = 1
     resource_spec_name: str = ""
 
@@ -42,6 +42,7 @@ class NodeCostResult(BaseModel):
     raw_instances: int
     ha_instances: Optional[int] = None
     final_instances: int
+    total_gpus: int
     node_cost: float
     resource_spec_name: str
 

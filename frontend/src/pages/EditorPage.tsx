@@ -93,7 +93,7 @@ function EditorPage() {
           qps_per_instance: Number(n.data.qps_per_instance ?? 50),
           avg_response_time_ms: Number(n.data.avg_response_time_ms ?? 100),
           cost_per_unit: Number(n.data.cost_per_unit ?? 25),
-          cost_type: (n.data.cost_type ?? 'per_gpu') as 'per_gpu' | 'per_machine',
+          gpus_per_instance: Number(n.data.gpus_per_instance ?? 1),
           gpus_per_machine: Number(n.data.gpus_per_machine ?? 1),
           resource_spec_name: String(n.data.resource_spec_name || n.data.module_name || '默认'),
         })),
@@ -152,13 +152,15 @@ function EditorPage() {
 
   const handleNameConfirm = async () => {
     const newName = nameValue.trim() || '未命名 Pipeline';
+    const oldName = pipelineName;
     setPipelineName(newName);
     setEditingName(false);
     if (pipelineId) {
       try {
         await pipelinesService.updatePipeline(pipelineId, { name: newName });
       } catch {
-        // silently fail, name is already updated locally
+        setPipelineName(oldName);
+        message.error('名称更新失败');
       }
     }
   };

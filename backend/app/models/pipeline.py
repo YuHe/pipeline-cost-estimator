@@ -49,7 +49,7 @@ class ResourceSpec(Base):
     gpu_type: Mapped[str] = mapped_column(String(255), nullable=False)
     gpu_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     cost_per_unit: Mapped[float] = mapped_column(Float, nullable=False)
-    cost_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'per_gpu' or 'per_machine'
+    gpus_per_instance: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gpus_per_machine: Mapped[int | None] = mapped_column(Integer, nullable=True)
     qps_per_instance: Mapped[float | None] = mapped_column(Float, nullable=True)
     avg_response_time_ms: Mapped[float | None] = mapped_column(Float, nullable=True)

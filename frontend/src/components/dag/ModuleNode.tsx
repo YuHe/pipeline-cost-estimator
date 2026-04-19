@@ -52,13 +52,11 @@ const ModuleNode = memo(({ id, data, selected }: NodeProps<Node<ModuleNodeData>>
     textAlign: 'center',
   };
 
-  const costTypeLabel = data.cost_type === 'per_gpu' ? '按卡计费' : '按机计费';
-
   return (
     <div style={containerStyle} onClick={() => setSelectedNodeId(id)}>
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         style={{ background: '#1677ff', width: 8, height: 8 }}
       />
       <div style={titleStyle}>{String(data.module_name || data.label || '模块')}</div>
@@ -67,21 +65,21 @@ const ModuleNode = memo(({ id, data, selected }: NodeProps<Node<ModuleNodeData>>
         <span style={{ color: '#262626' }}>{String(data.qps_per_instance ?? '-')}</span>
       </div>
       <div style={statRowStyle}>
-        <span>单价</span>
+        <span>单卡日成本</span>
         <span style={{ color: '#262626' }}>{String(data.cost_per_unit ?? '-')}</span>
       </div>
       <div style={statRowStyle}>
-        <span>计费方式</span>
-        <span style={{ color: '#262626' }}>{costTypeLabel}</span>
+        <span>GPU/实例</span>
+        <span style={{ color: '#262626' }}>{String(data.gpus_per_instance ?? 1)}</span>
       </div>
       {hasResult && (
         <div style={costBadgeStyle}>
-          {nodeCost.final_instances} 实例 | {nodeCost.node_cost.toFixed(2)} 元
+          {nodeCost.total_gpus} GPU | {nodeCost.final_instances} 实例 | {nodeCost.node_cost.toFixed(2)} 元
         </div>
       )}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         style={{ background: '#1677ff', width: 8, height: 8 }}
       />
     </div>

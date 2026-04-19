@@ -10,6 +10,12 @@ class ModuleTemplateCreate(BaseModel):
     config: dict
 
 
+class ModuleTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    config: Optional[dict] = None
+
+
 class ModuleTemplateOut(BaseModel):
     id: int
     name: str

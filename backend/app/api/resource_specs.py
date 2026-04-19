@@ -51,7 +51,7 @@ async def create_resource_spec(
         gpu_type=payload.gpu_type,
         gpu_count=payload.gpu_count,
         cost_per_unit=payload.cost_per_unit,
-        cost_type=payload.cost_type,
+        gpus_per_instance=payload.gpus_per_instance,
         gpus_per_machine=payload.gpus_per_machine,
         qps_per_instance=payload.qps_per_instance,
         avg_response_time_ms=payload.avg_response_time_ms,

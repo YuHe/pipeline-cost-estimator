@@ -11,7 +11,7 @@ const DEFAULT_MODULE_CONFIG: ModuleConfig = {
   qps_per_instance: 50,
   avg_response_time_ms: 100,
   cost_per_unit: 25,
-  cost_type: 'per_gpu',
+  gpus_per_instance: 1,
   gpus_per_machine: 1,
 };
 
@@ -100,7 +100,14 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
 
   addNode: (position, config) => {
     const id = `node_${++nodeIdCounter}_${Date.now()}`;
-    const moduleConfig = { ...DEFAULT_MODULE_CONFIG, ...config };
+    // Backward compat: migrate old cost_type to gpus_per_instance
+    const migrated = { ...config };
+    if ('cost_type' in migrated && !('gpus_per_instance' in migrated)) {
+      migrated.gpus_per_instance = (migrated as Record<string, unknown>).cost_type === 'per_machine'
+        ? ((migrated as Record<string, unknown>).gpus_per_machine as number || 1) : 1;
+      delete (migrated as Record<string, unknown>).cost_type;
+    }
+    const moduleConfig = { ...DEFAULT_MODULE_CONFIG, ...migrated };
     const newNode: AppNode = {
       id,
       type: 'moduleNode',
@@ -157,7 +164,7 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
           qps_per_instance: Number(n.data.qps_per_instance ?? 50),
           avg_response_time_ms: Number(n.data.avg_response_time_ms ?? 100),
           cost_per_unit: Number(n.data.cost_per_unit ?? 25),
-          cost_type: (n.data.cost_type ?? 'per_gpu') as 'per_gpu' | 'per_machine',
+          gpus_per_instance: Number(n.data.gpus_per_instance ?? 1),
           gpus_per_machine: Number(n.data.gpus_per_machine ?? 1),
         },
       })),

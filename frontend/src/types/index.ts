@@ -49,7 +49,7 @@ export interface ModuleConfig {
   qps_per_instance: number;
   avg_response_time_ms: number;
   cost_per_unit: number;
-  cost_type: 'per_gpu' | 'per_machine';
+  gpus_per_instance: number;
   gpus_per_machine: number;
   custom_params?: Record<string, unknown>;
 }
@@ -100,6 +100,7 @@ export interface NodeCost {
   raw_instances: number;
   ha_instances: number | null;
   final_instances: number;
+  total_gpus: number;
   node_cost: number;
   resource_spec_name: string;
 }
@@ -110,7 +111,7 @@ export interface ResourceSpec {
   gpu_type: string;
   gpu_count: number;
   cost_per_unit: number;
-  cost_type: 'per_gpu' | 'per_machine';
+  gpus_per_instance: number | null;
   gpus_per_machine: number | null;
   qps_per_instance: number | null;
   avg_response_time_ms: number | null;
@@ -137,7 +138,7 @@ export interface CalculateRequest {
     qps_per_instance: number;
     avg_response_time_ms: number;
     cost_per_unit: number;
-    cost_type: 'per_gpu' | 'per_machine';
+    gpus_per_instance: number;
     gpus_per_machine: number;
     resource_spec_name: string;
   }[];

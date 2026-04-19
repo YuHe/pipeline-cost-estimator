@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user, get_db
 from app.models.module_template import ModuleTemplate
 from app.models.user import User
-from app.schemas.module_template import ModuleTemplateCreate, ModuleTemplateOut
+from app.schemas.module_template import ModuleTemplateCreate, ModuleTemplateOut, ModuleTemplateUpdate
 
 router = APIRouter(prefix="/api/module-templates", tags=["module-templates"])
 
@@ -77,3 +77,35 @@ async def delete_template(
 
     await db.delete(template)
     await db.flush()
+
+
+@router.put("/{template_id}", response_model=ModuleTemplateOut)
+async def update_template(
+    template_id: int,
+    payload: ModuleTemplateUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ModuleTemplateOut:
+    """Update a module template. Users can update their own; admins can update any."""
+    result = await db.execute(
+        select(ModuleTemplate).where(ModuleTemplate.id == template_id)
+    )
+    template = result.scalar_one_or_none()
+    if template is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module template not found",
+        )
+    if template.created_by != current_user.id and not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to update this template",
+        )
+    if payload.name is not None:
+        template.name = payload.name
+    if payload.description is not None:
+        template.description = payload.description
+    if payload.config is not None:
+        template.config = payload.config
+    await db.flush()
+    return ModuleTemplateOut.model_validate(template)

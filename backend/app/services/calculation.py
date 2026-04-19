@@ -141,15 +141,10 @@ def calculate_pipeline_cost(req: CalculateRequest) -> CalculateResponse:
 
         final_instances = ha_instances if req.ha_enabled else raw_instances
 
-        # Cost calculation
-        if cfg.cost_type == "per_gpu":
-            node_cost = final_instances * cfg.cost_per_unit
-        elif cfg.cost_type == "per_machine":
-            gpus = cfg.gpus_per_machine if cfg.gpus_per_machine > 0 else 1
-            machines = math.ceil(final_instances / gpus)
-            node_cost = machines * cfg.cost_per_unit
-        else:
-            raise ValueError(f"Unknown cost_type '{cfg.cost_type}' for node '{nid}'")
+        # Cost calculation — unified per-GPU billing
+        gpus_per_inst = cfg.gpus_per_instance if cfg.gpus_per_instance > 0 else 1
+        total_gpus = final_instances * gpus_per_inst
+        node_cost = total_gpus * cfg.cost_per_unit
 
         node_results.append(
             NodeCostResult(
@@ -159,6 +154,7 @@ def calculate_pipeline_cost(req: CalculateRequest) -> CalculateResponse:
                 raw_instances=raw_instances,
                 ha_instances=ha_instances,
                 final_instances=final_instances,
+                total_gpus=total_gpus,
                 node_cost=round(node_cost, 4),
                 resource_spec_name=cfg.resource_spec_name,
             )

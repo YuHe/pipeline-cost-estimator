@@ -61,6 +61,12 @@ function ResultPanel() {
       width: 60,
     },
     {
+      title: 'GPU 数',
+      dataIndex: 'total_gpus',
+      key: 'total_gpus',
+      width: 60,
+    },
+    {
       title: '成本',
       dataIndex: 'node_cost',
       key: 'node_cost',
