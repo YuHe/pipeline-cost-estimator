@@ -16,6 +16,7 @@ async def create_pipeline(
     )
     db.add(pipeline)
     await db.flush()
+    await db.refresh(pipeline)
     return pipeline
 
 
@@ -55,6 +56,7 @@ async def update_pipeline(
     if data.description is not None:
         pipeline.description = data.description
     await db.flush()
+    await db.refresh(pipeline)
     return pipeline
 
 
@@ -180,4 +182,5 @@ async def copy_pipeline(
             new_pipeline.current_version_id = new_version.id
             await db.flush()
 
+    await db.refresh(new_pipeline)
     return new_pipeline

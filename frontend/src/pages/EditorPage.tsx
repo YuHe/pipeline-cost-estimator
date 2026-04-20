@@ -5,6 +5,7 @@ import { ArrowLeftOutlined, HistoryOutlined, ShareAltOutlined } from '@ant-desig
 import LeftPanel from '@/components/dag/LeftPanel';
 import Canvas from '@/components/dag/Canvas';
 import ModuleConfigDrawer from '@/components/dag/ModuleConfigDrawer';
+import TemplateConfigDrawer from '@/components/dag/TemplateConfigDrawer';
 import SplitRatioModal from '@/components/dag/SplitRatioModal';
 import GlobalInputBar from '@/components/dag/GlobalInputBar';
 import ResultPanel from '@/components/dag/ResultPanel';
@@ -35,6 +36,8 @@ function EditorPage() {
   const setCostResult = usePipelineStore((s) => s.setCostResult);
   const setIsCalculating = usePipelineStore((s) => s.setIsCalculating);
   const costResult = usePipelineStore((s) => s.costResult);
+  const lastSavedConfig = usePipelineStore((s) => s.lastSavedConfig);
+  const setLastSavedConfig = usePipelineStore((s) => s.setLastSavedConfig);
 
   const [splitRatioEdgeId, setSplitRatioEdgeId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -134,16 +137,25 @@ function EditorPage() {
       }
 
       const config = getConfig();
+      const configJson = JSON.stringify(config);
+
+      // Skip save if config unchanged
+      if (lastSavedConfig && configJson === lastSavedConfig) {
+        message.info('配置未变更，已是最新版本');
+        return;
+      }
+
       await pipelinesService.saveVersion(
         currentPipelineId,
         config,
         costResult ?? undefined,
       );
+      setLastSavedConfig(configJson);
       message.success('版本保存成功');
     } catch {
       message.error('保存失败');
     }
-  }, [pipelineId, pipelineName, getConfig, costResult, setPipelineId]);
+  }, [pipelineId, pipelineName, getConfig, costResult, setPipelineId, lastSavedConfig, setLastSavedConfig]);
 
   const handleNameClick = () => {
     setNameValue(pipelineName);
@@ -281,6 +293,7 @@ function EditorPage() {
 
       {/* Drawers and modals */}
       <ModuleConfigDrawer />
+      <TemplateConfigDrawer />
       <SplitRatioModal
         edgeId={splitRatioEdgeId}
         open={!!splitRatioEdgeId}

@@ -68,6 +68,8 @@ interface PipelineEditorState {
   // Load/save
   getConfig: () => PipelineConfig;
   loadConfig: (config: PipelineConfig) => void;
+  lastSavedConfig: string | null;
+  setLastSavedConfig: (config: string | null) => void;
   reset: () => void;
 }
 
@@ -85,6 +87,7 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
   costResult: null,
   isCalculating: false,
   selectedNodeId: null,
+  lastSavedConfig: null,
 
   onNodesChange: (changes) => set((state) => ({
     nodes: applyNodeChanges(changes, state.nodes) as AppNode[],
@@ -148,6 +151,7 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
   setSelectedNodeId: (nodeId) => set({ selectedNodeId: nodeId }),
   setPipelineId: (id) => set({ pipelineId: id }),
   setPipelineName: (name) => set({ pipelineName: name }),
+  setLastSavedConfig: (config) => set({ lastSavedConfig: config }),
 
   getConfig: () => {
     const state = get();
@@ -196,6 +200,7 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
       edges,
       globalInput: config.global_input ?? { ...DEFAULT_GLOBAL_INPUT },
       costResult: null,
+      lastSavedConfig: JSON.stringify(config),
     });
   },
 
@@ -211,6 +216,7 @@ const usePipelineStore = create<PipelineEditorState>((set, get) => ({
     costResult: null,
     isCalculating: false,
     selectedNodeId: null,
+    lastSavedConfig: null,
   }),
 }));
 

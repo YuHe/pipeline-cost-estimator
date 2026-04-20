@@ -6,17 +6,20 @@ interface TemplateStoreState {
   globalTemplates: ModuleTemplate[];
   myTemplates: ModuleTemplate[];
   loading: boolean;
+  editingTemplateId: number | null;
 
   fetchTemplates: () => Promise<void>;
   addTemplate: (data: { name: string; description?: string; config: Record<string, unknown> }) => Promise<void>;
   updateTemplate: (id: number, data: { name?: string; config?: Record<string, unknown> }) => Promise<void>;
   removeTemplate: (id: number) => Promise<void>;
+  setEditingTemplateId: (id: number | null) => void;
 }
 
 const useTemplateStore = create<TemplateStoreState>((set) => ({
   globalTemplates: [],
   myTemplates: [],
   loading: false,
+  editingTemplateId: null,
 
   fetchTemplates: async () => {
     set({ loading: true });
@@ -53,8 +56,11 @@ const useTemplateStore = create<TemplateStoreState>((set) => ({
     set((state) => ({
       myTemplates: state.myTemplates.filter((t) => t.id !== id),
       globalTemplates: state.globalTemplates.filter((t) => t.id !== id),
+      editingTemplateId: state.editingTemplateId === id ? null : state.editingTemplateId,
     }));
   },
+
+  setEditingTemplateId: (id) => set({ editingTemplateId: id }),
 }));
 
 export default useTemplateStore;

@@ -2,6 +2,7 @@ import { useEffect, useState, type DragEvent } from 'react';
 import { Spin, Popconfirm, Input, message } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import useTemplateStore from '@/store/templateStore';
+
 const DEFAULT_BLANK_CONFIG = {
   module_name: '新模块',
   qps_per_instance: 50,
@@ -11,15 +12,19 @@ const DEFAULT_BLANK_CONFIG = {
   gpus_per_machine: 1,
 };
 
-type TabKey = 'blank' | 'templates';
-
 function LeftPanel() {
-  const [activeTab, setActiveTab] = useState<TabKey>('blank');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
 
-  const { globalTemplates, myTemplates, loading, fetchTemplates, updateTemplate, removeTemplate } =
-    useTemplateStore();
+  const {
+    globalTemplates,
+    myTemplates,
+    loading,
+    fetchTemplates,
+    updateTemplate,
+    removeTemplate,
+    setEditingTemplateId,
+  } = useTemplateStore();
 
   useEffect(() => {
     fetchTemplates();
@@ -54,6 +59,12 @@ function LeftPanel() {
     }
   };
 
+  const handleTemplateClick = (id: number, isOwn: boolean) => {
+    if (isOwn) {
+      setEditingTemplateId(id);
+    }
+  };
+
   const renderCard = (
     label: string,
     config: Record<string, unknown>,
@@ -65,6 +76,7 @@ function LeftPanel() {
       style={cardStyle}
       draggable
       onDragStart={(e) => onDragStart(e, config)}
+      onClick={() => actions && handleTemplateClick(actions.id, actions.isOwn)}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = '#1677ff';
         (e.currentTarget as HTMLDivElement).style.background = '#e6f4ff';
@@ -84,6 +96,7 @@ function LeftPanel() {
             onPressEnter={() => handleEditConfirm(actions.id)}
             autoFocus
             style={{ flex: 1, marginRight: 4 }}
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -116,65 +129,46 @@ function LeftPanel() {
     </div>
   );
 
-  const renderTemplateTab = () => {
-    if (loading) {
-      return <div style={{ textAlign: 'center', padding: 24 }}><Spin size="small" /></div>;
-    }
-    return (
-      <>
-        {globalTemplates.length > 0 && (
-          <>
-            <div style={sectionStyle}>全局模板</div>
-            {globalTemplates.map((t) =>
-              renderCard(t.name, t.config as Record<string, unknown>, `global-${t.id}`)
-            )}
-          </>
-        )}
-        <div style={sectionStyle}>我的模板</div>
-        {myTemplates.length === 0 ? (
-          <div style={{ fontSize: 12, color: '#bfbfbf', padding: '8px 0' }}>
-            暂无模板，可在模块配置中保存
-          </div>
-        ) : (
-          myTemplates.map((t) =>
-            renderCard(
-              t.name,
-              t.config as Record<string, unknown>,
-              `my-${t.id}`,
-              { id: t.id, isOwn: true },
-            )
-          )
-        )}
-      </>
-    );
-  };
-
   return (
     <div style={panelStyle}>
-      <div style={{ display: 'flex', marginBottom: 12, gap: 0 }}>
-        <div
-          style={tabStyle(activeTab === 'blank')}
-          onClick={() => setActiveTab('blank')}
-        >
-          空白模块
-        </div>
-        <div
-          style={tabStyle(activeTab === 'templates')}
-          onClick={() => setActiveTab('templates')}
-        >
-          模板库
-        </div>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: '#262626' }}>
+        模板库
       </div>
 
-      {activeTab === 'blank' ? (
-        <>
-          <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 12 }}>
-            拖拽模块到画布中
-          </div>
-          {renderCard('新模块', DEFAULT_BLANK_CONFIG, 'blank-default')}
-        </>
+      <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 12 }}>
+        拖拽模块到画布 · 点击我的模板可编辑
+      </div>
+
+      {renderCard('新建空白模块', DEFAULT_BLANK_CONFIG, 'blank-default')}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 24 }}><Spin size="small" /></div>
       ) : (
-        renderTemplateTab()
+        <>
+          {globalTemplates.length > 0 && (
+            <>
+              <div style={sectionStyle}>全局模板</div>
+              {globalTemplates.map((t) =>
+                renderCard(t.name, t.config as Record<string, unknown>, `global-${t.id}`)
+              )}
+            </>
+          )}
+          <div style={sectionStyle}>我的模板</div>
+          {myTemplates.length === 0 ? (
+            <div style={{ fontSize: 12, color: '#bfbfbf', padding: '8px 0' }}>
+              暂无模板，可在模块配置中保存
+            </div>
+          ) : (
+            myTemplates.map((t) =>
+              renderCard(
+                t.name,
+                t.config as Record<string, unknown>,
+                `my-${t.id}`,
+                { id: t.id, isOwn: true },
+              )
+            )
+          )}
+        </>
       )}
     </div>
   );
@@ -188,18 +182,6 @@ const panelStyle: React.CSSProperties = {
   overflowY: 'auto',
   flexShrink: 0,
 };
-
-const tabStyle = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  textAlign: 'center',
-  padding: '6px 0',
-  fontSize: 13,
-  fontWeight: active ? 600 : 400,
-  color: active ? '#1677ff' : '#595959',
-  borderBottom: active ? '2px solid #1677ff' : '2px solid transparent',
-  cursor: 'pointer',
-  transition: 'all 0.2s',
-});
 
 const sectionStyle: React.CSSProperties = {
   fontSize: 12,
